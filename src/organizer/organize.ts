@@ -35,12 +35,17 @@ export async function organizeTabs(
   input: OrganizerInput,
   deps: OrganizerDependencies,
 ): Promise<OrganizerResult> {
+  console.log("[Organizer] Starting with", input.tabs.length, "tabs");
+  console.log("[Organizer] Existing groups:", input.existingGroups.length);
+
   if (input.tabs.length < 2) {
+    console.log("[Organizer] Less than 2 tabs, no-op");
     return { mode: "no-op", groups: [] };
   }
 
   const startedAt = deps.now();
   const batches = createBatches(input.tabs, 50);
+  console.log("[Organizer] Created", batches.length, "batches");
   const offeredGroups = input.existingGroups.map((group) => ({
     alias: group.alias,
     title: group.title,
@@ -63,6 +68,8 @@ export async function organizeTabs(
         categories: availableGroups,
       });
 
+      console.log("[Organizer] Raw AI response:", JSON.stringify(raw, null, 2));
+
       const valid = validateModelOutput(raw, {
         mode: isSeed ? "seed" : "continuation",
         allowedTabAliases: new Set(batch.map((tab) => tab.alias)),
@@ -72,12 +79,18 @@ export async function organizeTabs(
         maxGroups: 5,
       });
 
+      console.log("[Organizer] Validated groups:", valid.length);
+      console.log("[Organizer] Validated output:", JSON.stringify(valid, null, 2));
+
       if (isSeed && valid.length === 0) {
+        console.log("[Organizer] Seed returned invalid output, falling back");
         return fallback(input.tabs, "seed-invalid");
       }
 
       if (isSeed) {
         categories = establishCategories(valid, offeredGroups);
+        console.log("[Organizer] Seed complete, created", categories.length, "categories");
+        console.log("[Organizer] Categories:", JSON.stringify(categories, null, 2));
       }
 
       mergeAssignments(valid, batch, categories, assignments);
@@ -88,15 +101,21 @@ export async function organizeTabs(
         batches.length,
       );
     } catch {
-      if (isSeed) return fallback(input.tabs, "seed-failed");
+      console.log("[Organizer] Batch", index, "failed");
+      if (isSeed) {
+        console.log("[Organizer] Seed batch failed, falling back");
+        return fallback(input.tabs, "seed-failed");
+      }
       break;
     }
   }
 
-  return {
-    mode: "ai",
+  const result = {
+    mode: "ai" as const,
     groups: toPlans(categories, assignments),
   };
+  console.log("[Organizer] AI mode complete, created", result.groups.length, "groups");
+  return result;
 }
 
 type ValidatedGroup = ReturnType<typeof validateModelOutput>[number];
@@ -169,9 +188,12 @@ function fallback(
   tabs: OrganizerTab[],
   reason: string,
 ): { mode: "fallback"; reason: string; groups: PlannedGroup[] } {
+  console.log("[Organizer] Fallback triggered, reason:", reason);
+  const groups = createDomainFallback(tabs);
+  console.log("[Organizer] Fallback created", groups.length, "groups from domains");
   return {
     mode: "fallback",
     reason,
-    groups: createDomainFallback(tabs),
+    groups,
   };
 }

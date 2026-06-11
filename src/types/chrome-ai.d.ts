@@ -11,7 +11,10 @@ interface LanguageModelDownloadProgressEvent extends Event {
 interface LanguageModelSession {
   prompt(
     input: string,
-    options?: { signal?: AbortSignal; responseConstraint?: object },
+    options?: {
+      signal?: AbortSignal;
+      responseConstraint?: object;
+    },
   ): Promise<string>;
   destroy(): void;
 }
@@ -22,6 +25,10 @@ interface LanguageModelCreateOptions {
     content: string;
   }>;
   monitor?: (monitor: EventTarget) => void;
+  expectedOutputs?: Array<{
+    type: "text";
+    languages?: string[];
+  }>;
 }
 
 interface LanguageModelStatic {

@@ -42,6 +42,7 @@ export async function withLanguageModel<T>(
   }
   const session = await api.create({
     initialPrompts: [{ role: "system", content: SYSTEM_PROMPT }],
+    expectedOutputs: [{ type: "text", languages: ["en"] }],
     monitor(monitor) {
       monitor.addEventListener("downloadprogress", (event) => {
         onProgress((event as LanguageModelDownloadProgressEvent).loaded);

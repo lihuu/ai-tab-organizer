@@ -51,17 +51,22 @@ export function validateModelOutput(
     const known = item.groupAlias
       ? options.existingGroups.get(item.groupAlias)
       : undefined;
-    if (item.groupAlias && !known) continue;
+    // Skip if groupAlias doesn't exist in continuation mode
     if (options.mode === "continuation" && !known) continue;
+
+    // Prefer AI's groupName, only use existing group's title if AI didn't provide one
     const groupName = normalizeGroupName(
-      known?.title ?? item.groupName ?? "",
+      item.groupName ?? known?.title ?? "",
     );
     if (!groupName) continue;
-    const key = item.groupAlias
-      ? `alias:${item.groupAlias}`
+
+    // Use groupAlias only if it matches an existing group, otherwise treat as new
+    const effectiveAlias = known ? item.groupAlias : undefined;
+    const key = effectiveAlias
+      ? `alias:${effectiveAlias}`
       : `name:${groupName}`;
     const group = merged.get(key) ?? {
-      ...(item.groupAlias ? { groupAlias: item.groupAlias } : {}),
+      ...(effectiveAlias ? { groupAlias: effectiveAlias } : {}),
       groupName,
       tabAliases: [],
     };

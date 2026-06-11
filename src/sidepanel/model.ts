@@ -82,13 +82,16 @@ export class SidePanelModel {
 
   private async runAi(): Promise<void> {
     if (!this.task) return;
+    console.log("[SidePanel] Running AI mode");
     await this.transition({ phase: "running" });
     try {
       const result = await this.deps.organize(this.task, {
         onDownload: async (loaded) => {
+          console.log("[SidePanel] Downloading model:", loaded);
           await this.transition({ phase: "downloading", downloadProgress: loaded });
         },
         onProgress: async (processed, batch, total) => {
+          console.log("[SidePanel] Progress:", processed, "tabs, batch", batch, "/", total);
           await this.transition({
             phase: "running",
             processedTabs: processed,
@@ -97,28 +100,36 @@ export class SidePanelModel {
           });
         },
       });
+      console.log("[SidePanel] Organize result:", result.mode, result.groups.length, "groups");
       if (result.mode === "fallback") {
+        console.log("[SidePanel] AI mode fell back to domain grouping:", result.reason);
         await this.executeAndFinish(
           result.groups,
           "fallback-completed",
           result.reason,
         );
       } else if (result.mode === "no-op") {
+        console.log("[SidePanel] No-op result");
         await this.finish("no-op");
       } else {
+        console.log("[SidePanel] AI mode completed successfully");
         await this.executeAndFinish(result.groups, "completed");
       }
-    } catch {
+    } catch (error) {
+      console.log("[SidePanel] AI mode failed, falling back:", error);
       await this.runFallback("model-failed");
     }
   }
 
   private async runFallback(reason: string): Promise<void> {
     if (!this.task) return;
+    console.log("[SidePanel] Running fallback mode, reason:", reason);
     await this.transition({ phase: "running" });
     try {
       const result = await this.deps.fallback(this.task, reason);
+      console.log("[SidePanel] Fallback created", result.groups.length, "groups");
       if (result.groups.length === 0) {
+        console.log("[SidePanel] Fallback returned no groups");
         await this.finish("no-op", { fallbackReason: reason });
         return;
       }
@@ -127,7 +138,8 @@ export class SidePanelModel {
         "fallback-completed",
         result.reason ?? reason,
       );
-    } catch {
+    } catch (error) {
+      console.log("[SidePanel] Fallback failed:", error);
       await this.finish("failed", { errorCode: "fallback-failed" });
     }
   }
