@@ -52,6 +52,25 @@ describe("validateModelOutput", () => {
     ).toEqual([]);
   });
 
+  it("handles non-array tabAliases gracefully", () => {
+    const options = {
+      mode: "seed" as const,
+      allowedTabAliases: new Set(["T1", "T2"]),
+      existingGroups: new Map<string, { title: string }>(),
+      maxGroups: 5,
+    };
+    expect(
+      validateModelOutput(
+        [
+          { groupName: "Good", tabAliases: ["T1", "T2"] },
+          { groupName: "Bad", tabAliases: "not-an-array" },
+          { groupName: "Also Bad", tabAliases: 42 },
+        ],
+        options,
+      ),
+    ).toEqual([{ groupName: "Good", tabAliases: ["T1", "T2"] }]);
+  });
+
   it("merges duplicate normalized names before applying the minimum", () => {
     const result = validateModelOutput(
       [

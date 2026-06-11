@@ -18,7 +18,7 @@ export const MODEL_RESPONSE_SCHEMA = {
 interface RawGroup {
   groupAlias?: string;
   groupName?: string;
-  tabAliases?: string[];
+  tabAliases: string[];
 }
 
 interface ValidationOptions {
@@ -44,6 +44,10 @@ export function validateModelOutput(
   >();
 
   for (const item of raw as RawGroup[]) {
+    if (!item || typeof item !== "object") continue;
+    if (item.tabAliases !== undefined && !Array.isArray(item.tabAliases))
+      continue;
+    if (!Array.isArray(item.tabAliases)) continue;
     const known = item.groupAlias
       ? options.existingGroups.get(item.groupAlias)
       : undefined;
@@ -61,7 +65,7 @@ export function validateModelOutput(
       groupName,
       tabAliases: [],
     };
-    const tabAliases = (item.tabAliases ?? []).filter((alias) => {
+    const tabAliases = item.tabAliases.filter((alias) => {
       if (!options.allowedTabAliases.has(alias) || usedTabs.has(alias))
         return false;
       usedTabs.add(alias);
