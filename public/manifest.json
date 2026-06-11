@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "AI Tab Organizer",
+  "version": "0.1.0",
+  "description": "Group tabs locally with Chrome's built-in AI.",
+  "minimum_chrome_version": "138",
+  "permissions": ["tabs", "tabGroups", "sidePanel", "storage"],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "Organize tabs"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "commands": {
+    "organize-tabs": {
+      "suggested_key": {
+        "default": "Alt+Shift+G"
+      },
+      "description": "Organize tabs in the current window"
+    }
+  }
+}
