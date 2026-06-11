@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  destroyActiveLanguageModelSession,
   promptWithTimeout,
   withLanguageModel,
 } from "../../src/ai/language-model";
@@ -59,5 +60,42 @@ describe("withLanguageModel", () => {
     await vi.advanceTimersByTimeAsync(15_000);
     await expect(pending).rejects.toThrow("batch-timeout");
     vi.useRealTimers();
+  });
+
+  it("allows external cleanup without double-destroy", async () => {
+    const session = { prompt: vi.fn(), destroy: vi.fn() };
+    const api = {
+      availability: vi.fn().mockResolvedValue("available"),
+      create: vi.fn().mockResolvedValue(session),
+    };
+
+    const workPromise = withLanguageModel(api, () => undefined, async () => {
+      // Simulate external cleanup while work is pending
+      destroyActiveLanguageModelSession();
+      return "done";
+    });
+
+    await workPromise;
+    // Session should be destroyed exactly once (by external cleanup)
+    expect(session.destroy).toHaveBeenCalledOnce();
+  });
+
+  it("propagates non-timeout errors from prompt", async () => {
+    const session = {
+      prompt: vi.fn().mockRejectedValue(new Error("model-error")),
+      destroy: vi.fn(),
+    };
+    const api = {
+      availability: vi.fn().mockResolvedValue("available"),
+      create: vi.fn().mockResolvedValue(session),
+    };
+
+    await expect(
+      withLanguageModel(api, () => undefined, (s) =>
+        promptWithTimeout(s, "input", {}, 15_000),
+      ),
+    ).rejects.toThrow("model-error");
+
+    expect(session.destroy).toHaveBeenCalledOnce();
   });
 });
