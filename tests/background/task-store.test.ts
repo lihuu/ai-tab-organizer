@@ -35,4 +35,20 @@ describe("TaskStore", () => {
     await store.release(1, claim.state.taskId, "different-owner");
     expect(await store.get(1)).toEqual(claim.state);
   });
+
+  it("strips sensitive data when updating state", async () => {
+    const storage = fakeSessionStorage();
+    const store = new TaskStore(storage, () => 1, 120_000);
+    const claim = await store.claim(1, "owner", 3);
+
+    // Simulate state with sensitive data added by mistake
+    const stateWithSensitive = {
+      ...claim.state,
+      phase: "running" as const,
+      tabTitles: ["Secret Tab 1", "Secret Tab 2"],
+    };
+
+    await store.update(stateWithSensitive);
+    expect(JSON.stringify(storage.data)).not.toMatch(/secret|tabTitles/i);
+  });
 });
