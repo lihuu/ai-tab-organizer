@@ -115,16 +115,21 @@ export class SidePanelModel {
 
   private async runFallback(reason: string): Promise<void> {
     if (!this.task) return;
-    const result = await this.deps.fallback(this.task, reason);
-    if (result.groups.length === 0) {
-      await this.finish("no-op", { fallbackReason: reason });
-      return;
+    await this.transition({ phase: "running" });
+    try {
+      const result = await this.deps.fallback(this.task, reason);
+      if (result.groups.length === 0) {
+        await this.finish("no-op", { fallbackReason: reason });
+        return;
+      }
+      await this.executeAndFinish(
+        result.groups,
+        "fallback-completed",
+        result.reason ?? reason,
+      );
+    } catch {
+      await this.finish("failed", { errorCode: "fallback-failed" });
     }
-    await this.executeAndFinish(
-      result.groups,
-      "fallback-completed",
-      result.reason ?? reason,
-    );
   }
 
   private async executeAndFinish(
