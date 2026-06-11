@@ -6,7 +6,14 @@
     <title>AI Tab Organizer</title>
   </head>
   <body>
-    <main id="app">正在加载...</main>
+    <main id="app" aria-live="polite">
+      <header>
+        <p class="eyebrow">端侧整理</p>
+        <h1>AI Tab Organizer</h1>
+      </header>
+      <section id="status" class="card"></section>
+      <button id="primary-action" type="button" hidden></button>
+    </main>
     <script type="module" src="/src/sidepanel/index.ts"></script>
   </body>
 </html>
