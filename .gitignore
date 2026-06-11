@@ -5,3 +5,11 @@ coverage/
 *.log
 .DS_Store
 
+.playwright-mcp/
+
+# Test artifacts
+*.png
+step*.md
+*-state.md
+extensions-page-*.md
+load-unpacked-state.md
