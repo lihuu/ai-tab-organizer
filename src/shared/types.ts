@@ -20,7 +20,7 @@ export interface TabSnapshot {
 export interface ExistingGroup {
   id: number;
   title: string;
-  color: chrome.tabGroups.Color;
+  color: `${chrome.tabGroups.Color}`;
 }
 
 export interface PreparedTask {
